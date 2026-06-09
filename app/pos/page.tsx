@@ -158,7 +158,7 @@ function PosContent() {
 
           <div className="bg-slate-800/50 border border-slate-700/60 rounded-xl p-4">
             <label className="block text-sm font-semibold uppercase tracking-wider text-slate-400 mb-2">
-              FOH Chaos Note Scratchpad
+              Remarks
             </label>
             <textarea
               value={notes}

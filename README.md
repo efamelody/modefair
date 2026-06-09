@@ -2,6 +2,8 @@
 
 A modern restaurant Point-of-Sale system built with **Next.js 16**, **TypeScript**, **Tailwind CSS v4**, **Prisma ORM**, and **Google Gemini 2.5 Flash**. Designed to solve real-world restaurant friction between Front-of-House (FOH) staff and Back-of-House (BOH) kitchen operations.
 
+> **Full documentation available in [`docs/`](docs/README.md)**
+
 ## Architecture
 
 ```
@@ -78,6 +80,19 @@ Open [http://localhost:3000](http://localhost:3000) to access the Table Manageme
 | Database | PostgreSQL + Prisma ORM |
 | AI | Google Gemini 2.5 Flash (`@google/genai`) |
 | Transactions | Prisma `$transaction` |
+
+## Documentation
+
+Comprehensive documentation is available in the [`docs/`](docs/README.md) directory:
+
+| Document | Description |
+|---|---|
+| [Architecture Overview](docs/ARCHITECTURE.md) | System layers, data flow, request lifecycle |
+| [Setup Guide](docs/SETUP.md) | Local development environment setup |
+| [User Guide](docs/USER_GUIDE.md) | Walkthrough of all features and workflows |
+| [API Reference](docs/API_REFERENCE.md) | Endpoint docs, request/response schemas |
+| [Database Schema](docs/DATABASE.md) | ERD, models, relationships, migrations |
+| [Demo Script](docs/DEMO_SCRIPT.md) | Step-by-step presentation walkthrough |
 
 ## Project Structure
 
