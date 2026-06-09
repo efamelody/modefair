@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
@@ -9,9 +7,11 @@ export async function GET() {
       orderBy: [{ category: "asc" }, { name: "asc" }],
     });
     return NextResponse.json({ success: true, items });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Failed to fetch menu items.";
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: message },
       { status: 500 }
     );
   }

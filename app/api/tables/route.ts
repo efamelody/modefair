@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
@@ -15,9 +13,11 @@ export async function GET() {
       orderBy: { tableNumber: "asc" },
     });
     return NextResponse.json({ success: true, tables });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Failed to fetch tables.";
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: message },
       { status: 500 }
     );
   }
@@ -25,7 +25,9 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   try {
-    const { id, status } = await request.json();
+    const body = await request.json();
+    const { id, status }: { id?: string; status?: string } = body;
+
     if (!id || !status) {
       return NextResponse.json(
         { success: false, error: "Missing table id or status." },
@@ -39,9 +41,11 @@ export async function PATCH(request: Request) {
     });
 
     return NextResponse.json({ success: true, table });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Failed to update table.";
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: message },
       { status: 500 }
     );
   }

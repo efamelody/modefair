@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -18,7 +18,7 @@ type CartItem = {
   quantity: number;
 };
 
-export default function PosDashboard() {
+function PosContent() {
   const searchParams = useSearchParams();
   const tableId = searchParams.get("tableId") || "";
 
@@ -45,7 +45,12 @@ export default function PosDashboard() {
         );
       return [
         ...prev,
-        { menuItemId: item.id, name: item.name, price: item.price, quantity: 1 },
+        {
+          menuItemId: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: 1,
+        },
       ];
     });
   };
@@ -158,7 +163,7 @@ export default function PosDashboard() {
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder='e.g., Hold the sambal on 1 nasi lemak, make roti canai super crispy, send drink out first sharp!!'
+              placeholder="e.g., Hold the sambal on 1 nasi lemak, make roti canai super crispy, send drink out first sharp!!"
               className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-200 text-sm focus:outline-none focus:border-emerald-500 h-24 resize-none transition"
             />
           </div>
@@ -227,7 +232,7 @@ export default function PosDashboard() {
               AI Expediter Component
             </div>
             <h3 className="text-xs font-mono font-bold tracking-widest text-slate-500 uppercase mb-4">
-              /// KITCHEN_LIVE_TICKET_STAMP
+              {"///"} KITCHEN_LIVE_TICKET_STAMP
             </h3>
             {kitchenTicket ? (
               <div className="prose prose-invert max-w-none text-sm font-mono text-emerald-300 whitespace-pre-line leading-relaxed">
@@ -243,5 +248,19 @@ export default function PosDashboard() {
         </section>
       </div>
     </main>
+  );
+}
+
+export default function PosPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+          <p className="text-slate-500 text-sm font-mono">Loading POS...</p>
+        </div>
+      }
+    >
+      <PosContent />
+    </Suspense>
   );
 }

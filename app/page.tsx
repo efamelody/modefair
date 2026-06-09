@@ -66,7 +66,10 @@ export default function TableDashboard() {
           OrderUp Smart POS
         </h1>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-slate-500 font-mono">
+          <span
+            className="text-xs text-slate-500 font-mono"
+            suppressHydrationWarning
+          >
             {new Date().toLocaleTimeString()}
           </span>
           <button

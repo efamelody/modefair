@@ -1,13 +1,18 @@
 import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
-const prisma = new PrismaClient();
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+
+type OrderItemInput = {
+  menuItemId: string;
+  quantity: number;
+};
 
 export async function POST(request: Request) {
   try {
-    const { tableId, items, rawNotes } = await request.json();
+    const body = await request.json();
+    const { tableId, items, rawNotes }: { tableId?: string; items?: OrderItemInput[]; rawNotes?: string } = body;
 
     if (!tableId || !items || items.length === 0) {
       return NextResponse.json(
@@ -34,7 +39,7 @@ export async function POST(request: Request) {
       Synthesize them into a clean, markdown-formatted kitchen ticket.
       Rules:
       1. Group the collection into distinct logical courses (e.g., Mains, Drinks, Sides).
-      2. Explicitly highlight custom structural modifications in bold text with a ⚠️ prefix (e.g., ⚠️ **NO ONIONS**, ⚠️ **EXTRA CRISPY**).
+      2. Explicitly highlight custom structural modifications in bold text with a \u26a0\ufe0f prefix (e.g., \u26a0\ufe0f **NO ONIONS**, \u26a0\ufe0f **EXTRA CRISPY**).
       3. At the absolute bottom, add a single-line block estimation labeled "ESTIMATED PREPARATION TIME: [X] MINS" based on item volume and overall kitchen processing overhead.
     `;
 
@@ -66,7 +71,7 @@ export async function POST(request: Request) {
           aiKitchenSummary,
           totalAmount,
           items: {
-            create: items.map((item: any) => ({
+            create: items.map((item) => ({
               menuItemId: item.menuItemId,
               quantity: item.quantity,
             })),
@@ -77,10 +82,12 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ success: true, order: activeOrder });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Critical POS System Failure Engine:", error);
+    const message =
+      error instanceof Error ? error.message : "Internal server fault handling order loop.";
     return NextResponse.json(
-      { success: false, error: error.message || "Internal server fault handling order loop." },
+      { success: false, error: message },
       { status: 500 }
     );
   }

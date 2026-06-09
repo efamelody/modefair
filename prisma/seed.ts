@@ -1,6 +1,8 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg(process.env.DATABASE_URL!);
+const prisma = new PrismaClient({ adapter });
 
 const menuItems = [
   { name: "Nasi Lemak Ayam Goreng", price: 14.5, category: "Mains" },
