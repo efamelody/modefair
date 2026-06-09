@@ -148,12 +148,29 @@ export default function TableDashboard() {
                   </p>
                 )}
 
-                <Link
-                  href={`/pos?tableId=${table.id}`}
-                  className="text-xs text-center bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-medium py-2 rounded-lg transition tracking-wide mt-auto"
-                >
-                  {table.status === "AVAILABLE" ? "Seat Guest" : "Manage Order"}
-                </Link>
+                {table.status === "AVAILABLE" ? (
+                  <Link
+                    href={`/pos?tableId=${table.id}`}
+                    className="text-xs text-center bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-medium py-2 rounded-lg transition tracking-wide mt-auto"
+                  >
+                    Seat Guest
+                  </Link>
+                ) : (
+                  <div className="flex gap-2 mt-auto">
+                    <Link
+                      href={`/pos?tableId=${table.id}`}
+                      className="flex-1 text-xs text-center bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-medium py-2 rounded-lg transition tracking-wide"
+                    >
+                      Manage Order
+                    </Link>
+                    <Link
+                      href={`/bill?orderId=${activeOrder?.id}`}
+                      className="flex-1 text-xs text-center bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium py-2 rounded-lg transition tracking-wide"
+                    >
+                      View Bill
+                    </Link>
+                  </div>
+                )}
               </div>
             );
           })}

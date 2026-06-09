@@ -30,15 +30,38 @@ model Order {
   rawNotes        String?
   aiKitchenSummary String?
   totalAmount     Float       @default(0.0)
+  billStatus      String      @default("OPEN")
   items           OrderItem[]
+  guests          Guest[]
   createdAt       DateTime    @default(now())
 }
 
 model OrderItem {
-  id         String   @id @default(cuid())
-  orderId    String
-  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  menuItemId String
-  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
-  quantity   Int
+  id          String       @id @default(cuid())
+  orderId     String
+  order       Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId  String
+  menuItem    MenuItem     @relation(fields: [menuItemId], references: [id])
+  quantity    Int
+  splitItems  GuestSplit[]
+}
+
+model Guest {
+  id        String       @id @default(cuid())
+  orderId   String
+  order     Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  name      String
+  method    String       @default("CASH")
+  splits    GuestSplit[]
+}
+
+model GuestSplit {
+  id          String    @id @default(cuid())
+  guestId     String
+  guest       Guest     @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  orderItemId String
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  quantity    Int
+
+  @@unique([guestId, orderItemId])
 }
