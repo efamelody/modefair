@@ -1,0 +1,44 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Table {
+  id          String   @id @default(cuid())
+  tableNumber String   @unique
+  status      String   @default("AVAILABLE")
+  orders      Order[]
+}
+
+model MenuItem {
+  id         String      @id @default(cuid())
+  name       String
+  price      Float
+  category   String
+  orderItems OrderItem[]
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  tableId         String
+  table           Table       @relation(fields: [tableId], references: [id])
+  status          String      @default("PENDING")
+  rawNotes        String?
+  aiKitchenSummary String?
+  totalAmount     Float       @default(0.0)
+  items           OrderItem[]
+  createdAt       DateTime    @default(now())
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  quantity   Int
+}
