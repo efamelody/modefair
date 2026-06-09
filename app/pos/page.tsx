@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -18,6 +18,21 @@ type CartItem = {
   quantity: number;
 };
 
+type TableOrderItem = {
+  id: string;
+  quantity: number;
+  menuItem: MenuItem;
+};
+
+type ActiveOrder = {
+  id: string;
+  status: string;
+  totalAmount: number;
+  rawNotes: string | null;
+  aiKitchenSummary: string | null;
+  items: TableOrderItem[];
+};
+
 function PosContent() {
   const searchParams = useSearchParams();
   const tableId = searchParams.get("tableId") || "";
@@ -26,8 +41,10 @@ function PosContent() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [notes, setNotes] = useState("");
   const [kitchenTicket, setKitchenTicket] = useState<string | null>(null);
+  const [existingOrderId, setExistingOrderId] = useState<string | null>(null);
+  const [tableNumber, setTableNumber] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
+  const [dispatchError, setDispatchError] = useState<string | null>(null);
   useEffect(() => {
     fetch("/api/menu-items")
       .then((r) => r.json())
@@ -36,7 +53,35 @@ function PosContent() {
       });
   }, []);
 
-  const handleAddToOrder = (item: MenuItem) => {
+  useEffect(() => {
+    if (!tableId) return;
+
+    fetch(`/api/tables/${tableId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.success) return;
+
+        const table = data.table;
+        setTableNumber(table.tableNumber);
+
+        const activeOrder: ActiveOrder | undefined = table.orders?.[0];
+        if (activeOrder) {
+          setExistingOrderId(activeOrder.id);
+          setCart(
+            activeOrder.items.map((i: TableOrderItem) => ({
+              menuItemId: i.menuItem.id,
+              name: i.menuItem.name,
+              price: i.menuItem.price,
+              quantity: i.quantity,
+            }))
+          );
+          setNotes(activeOrder.rawNotes || "");
+          setKitchenTicket(activeOrder.aiKitchenSummary);
+        }
+      });
+  }, [tableId]);
+
+  const handleAddToOrder = useCallback((item: MenuItem) => {
     setCart((prev) => {
       const match = prev.find((i) => i.menuItemId === item.id);
       if (match)
@@ -53,9 +98,10 @@ function PosContent() {
         },
       ];
     });
-  };
+    setKitchenTicket(null);
+  }, []);
 
-  const handleUpdateQty = (menuItemId: string, delta: number) => {
+  const handleUpdateQty = useCallback((menuItemId: string, delta: number) => {
     setCart((prev) =>
       prev
         .map((i) =>
@@ -65,33 +111,56 @@ function PosContent() {
         )
         .filter((i) => i.quantity > 0)
     );
-  };
+    setKitchenTicket(null);
+  }, []);
 
   const totalCart = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   const handleDispatchOrder = async () => {
-    if (!tableId) return;
+    if (!tableId || cart.length === 0) return;
     setLoading(true);
-    try {
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+
+    const isUpdate = !!existingOrderId;
+    const url = "/api/orders";
+    const method = isUpdate ? "PUT" : "POST";
+    const body = isUpdate
+      ? {
+          orderId: existingOrderId,
+          items: cart.map((i) => ({
+            menuItemId: i.menuItemId,
+            quantity: i.quantity,
+          })),
+          rawNotes: notes,
+        }
+      : {
           tableId,
           items: cart.map((i) => ({
             menuItemId: i.menuItemId,
             quantity: i.quantity,
           })),
           rawNotes: notes,
-        }),
+        };
+
+    setDispatchError(null);
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       });
       const data = await response.json();
       if (data.success) {
         setKitchenTicket(data.order.aiKitchenSummary);
-        setCart([]);
-        setNotes("");
+        setExistingOrderId(data.order.id);
+        setDispatchError(null);
+      } else {
+        setDispatchError(data.error || "Dispatch failed with no error message.");
       }
     } catch (e) {
+      setDispatchError(
+        e instanceof Error ? e.message : "Network error — check console for details."
+      );
       console.error("Dispatch failed", e);
     } finally {
       setLoading(false);
@@ -118,9 +187,16 @@ function PosContent() {
             OrderUp Smart POS
           </h1>
         </div>
-        <span className="bg-emerald-500/10 text-emerald-400 text-xs px-2.5 py-1 rounded-full border border-emerald-500/20 font-mono">
-          {tableId ? `Table ${tableId.slice(0, 6)}...` : "No table selected"}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="bg-emerald-500/10 text-emerald-400 text-xs px-2.5 py-1 rounded-full border border-emerald-500/20 font-mono">
+            {tableNumber || "No table"}
+          </span>
+          {existingOrderId && (
+            <span className="bg-amber-500/10 text-amber-400 text-xs px-2.5 py-1 rounded-full border border-amber-500/20 font-mono">
+              Existing Order
+            </span>
+          )}
+        </div>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -175,6 +251,12 @@ function PosContent() {
               <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">
                 Live Cart Processing
               </h2>
+              {existingOrderId && (
+                <div className="text-[10px] font-mono text-amber-400/60 mb-3 border border-amber-500/10 bg-amber-500/5 rounded-lg px-3 py-2">
+                  Modifying existing order — dispatch will update the current
+                  ticket
+                </div>
+              )}
               {cart.length === 0 ? (
                 <p className="text-sm text-slate-500 italic py-4">
                   Basket currently empty. Tap menu items to add.
@@ -216,6 +298,11 @@ function PosContent() {
                 <span>RM {totalCart.toFixed(2)}</span>
               </div>
             </div>
+            {dispatchError && (
+              <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-3">
+                {dispatchError}
+              </div>
+            )}
             <button
               disabled={cart.length === 0 || loading || !tableId}
               onClick={handleDispatchOrder}
@@ -223,7 +310,9 @@ function PosContent() {
             >
               {loading
                 ? "Transmitting to Expediter System..."
-                : "Dispatch to Kitchen Pipeline"}
+                : existingOrderId
+                  ? "Update Order in Kitchen Pipeline"
+                  : "Dispatch to Kitchen Pipeline"}
             </button>
           </div>
 
@@ -238,6 +327,11 @@ function PosContent() {
               <div className="prose prose-invert max-w-none text-sm font-mono text-emerald-300 whitespace-pre-line leading-relaxed">
                 {kitchenTicket}
               </div>
+            ) : existingOrderId ? (
+              <p className="text-xs font-mono text-slate-600 italic">
+                Cart modified — dispatch to regenerate kitchen ticket with
+                changes
+              </p>
             ) : (
               <p className="text-xs font-mono text-slate-600 italic">
                 Awaiting structural intake payload to analyze operational
