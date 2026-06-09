@@ -44,5 +44,6 @@ An AI-powered Restaurant Point-of-Sale system built with **Next.js 16**, **TypeS
 1. **Next.js App Router** over Pages Router for nested layouts, server components, and streamlined API routes
 2. **Prisma 7** over raw SQL for type-safe queries, auto-generated client, and atomic transactions
 3. **PostgreSQL** over SQLite for production-grade concurrency, JSON support, and deployment compatibility
-4. **Gemini 2.5 Flash** over GPT-4o for faster inference, lower latency kitchen ticket generation
+4. **Gemini 2.5 Flash** over GPT-4o for faster inference, lower latency kitchen ticket generation and bill-split suggestions
 5. **`@prisma/adapter-pg`** required by Prisma 7's new driver adapter architecture for database connectivity
+6. **Guest + GuestSplit models** over a flat split table for per-item, per-person granularity with quantity-level precision

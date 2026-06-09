@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -58,43 +58,39 @@ function BillContent() {
   const [receipt, setReceipt] = useState<object | null>(null);
   const [error, setError] = useState("");
 
-  const fetchBill = useCallback(async () => {
-    if (!orderId) {
-      setLoading(false);
-      return;
-    }
-    try {
-      const res = await fetch(`/api/bill?orderId=${orderId}`);
-      const data = await res.json();
-      if (data.success) {
-        setBill(data.bill);
-        if (data.bill.guests.length > 0) {
-          setGuestInputs(data.bill.guests.map((g: Guest) => g.name));
-          const initSplits: Record<string, Record<string, number>> = {};
-          const initMethods: Record<string, string> = {};
-          for (const g of data.bill.guests) {
-            initMethods[g.id] = g.method;
-            for (const si of g.items) {
-              if (!initSplits[si.orderItemId]) initSplits[si.orderItemId] = {};
-              initSplits[si.orderItemId][g.id] = (initSplits[si.orderItemId][g.id] || 0) + si.quantity;
-            }
-          }
-          setSplits(initSplits);
-          setGuestMethods(initMethods);
-        }
-      } else {
-        setError(data.error);
-      }
-    } catch {
-      setError("Failed to load bill.");
-    } finally {
-      setLoading(false);
-    }
-  }, [orderId]);
-
   useEffect(() => {
-    fetchBill();
-  }, [fetchBill]);
+    if (!orderId) return;
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/bill?orderId=${orderId}`);
+        const data = await res.json();
+        if (data.success) {
+          setBill(data.bill);
+          if (data.bill.guests.length > 0) {
+            setGuestInputs(data.bill.guests.map((g: Guest) => g.name));
+            const initSplits: Record<string, Record<string, number>> = {};
+            const initMethods: Record<string, string> = {};
+            for (const g of data.bill.guests) {
+              initMethods[g.id] = g.method;
+              for (const si of g.items) {
+                if (!initSplits[si.orderItemId]) initSplits[si.orderItemId] = {};
+                initSplits[si.orderItemId][g.id] = (initSplits[si.orderItemId][g.id] || 0) + si.quantity;
+              }
+            }
+            setSplits(initSplits);
+            setGuestMethods(initMethods);
+          }
+        } else {
+          setError(data.error);
+        }
+      } catch {
+        setError("Failed to load bill.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [orderId]);
 
   const saveGuests = async (names: string[]) => {
     if (!orderId || names.length === 0) return null;
@@ -148,6 +144,7 @@ function BillContent() {
       const guestId = `guest_${guestIdx}`;
       const current = next[orderItemId][guestId] || 0;
       if (current <= 1) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { [guestId]: _, ...rest } = next[orderItemId];
         next[orderItemId] = rest;
       } else {
